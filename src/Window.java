@@ -11,6 +11,8 @@ class Window extends JFrame {
     public ScriptEngine engine;
     public ScriptContext context;
 
+    public int selectedLine = 2;
+
     public Window() {
         setTitle("Rosie");
         setSize(500, 400);
@@ -18,36 +20,46 @@ class Window extends JFrame {
 
         setLaf("System");
 
-        manager = new ScriptEngineManager();
-        engine = manager.getEngineByExtension("js");
-        context = engine.getContext();
+        textArea = new JTextArea("Rosie v1.0\nType 'help' to see all functions.\n> ");
 
-        // Init global Math functions
         try {
+            manager = new ScriptEngineManager();
+            engine = manager.getEngineByExtension("js");
+            context = engine.getContext();
+
+            // Make Math functions global
             engine.eval("var help = 'help cls '; var mProps = Object.getOwnPropertyNames(Math);for (var i = 0; i < mProps.length; i++) {this[mProps[i]] = Math[mProps[i]]; help += mProps[i] + ' ';}", context);
         } catch (Exception e) {
             e.printStackTrace();
+
+            textArea.setText("Nashorn is not supported on your device.\nGet help at https://github.com/mochawoof/rosie.");
+            textArea.setEnabled(false);
         }
 
-        textArea = new JTextArea("Rosie v1.0\nType 'help' to see all functions.\n> ");
         textArea.setCaretPosition(textArea.getText().length());
         textArea.addKeyListener(new KeyListener() {
             public void keyReleased(KeyEvent e) {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-                    String[] lines = textArea.getText().split("\n");
-                    String rawLine = lines[lines.length - 1];
-                    String line = rawLine.replace("> ", "").replace(">", "");
-                    
+                String[] lines = textArea.getText().split("\n");
+                String rawLine = lines[lines.length - 1];
+                String line = rawLine.replace("> ", "").replace(">", "");
+                
+                int code = e.getKeyCode();
+
+                if (code == KeyEvent.VK_ENTER) {
                     if (rawLine.startsWith(">")) {
                         if (line.startsWith("cls")) {
                             lines = new String[0];
                         } else {
                             try {
-                                lines[lines.length - 1] = engine.eval(line, context) + "";
+                                Object evalled = engine.eval(line, context);
+                                if (evalled != null) {
+                                    lines[lines.length - 1] = evalled + "";
+                                }
                             } catch (Exception ex) {
                                 lines[lines.length - 1] = "Syntax Error";
                             }
                         }
+                        selectedLine = lines.length;
                     }
 
                     textArea.setText("");
@@ -55,11 +67,40 @@ class Window extends JFrame {
                         textArea.append(l + "\n");
                     }
                     textArea.append("> ");
+                } else if (code == KeyEvent.VK_UP || code == KeyEvent.VK_DOWN) {
+                    boolean good = false;
+                    if (code == KeyEvent.VK_UP) {
+                        if (selectedLine - 1 >= 0) {
+                            good = true;
+                            selectedLine--;
+                        }
+                    } else if (code == KeyEvent.VK_DOWN) {
+                        if (selectedLine + 1 < lines.length - 1) {
+                            good = true;
+                            selectedLine++;
+                        }
+                    }
+
+                    String rawLastLine = lines[selectedLine];
+
+                    lines[lines.length - 1] = rawLastLine;
+                    if (!rawLastLine.startsWith(">") || !rawLastLine.startsWith("> ")) {
+                        lines[lines.length - 1] = "> " + rawLastLine;
+                    }
+
+                    textArea.setText("");
+                    for (int i = 0; i < lines.length; i++) {
+                        String l = lines[i];
+                        textArea.append(l + ((i == lines.length - 1) ? "" : "\n"));
+                    }
                 }
             }
 
             public void keyPressed(KeyEvent e) {
-                e.consume();
+                int code = e.getKeyCode();
+                if (code == KeyEvent.VK_ENTER || code == KeyEvent.VK_UP || code == KeyEvent.VK_DOWN) {
+                    e.consume();
+                }
             }
 
             public void keyTyped(KeyEvent e) {}
