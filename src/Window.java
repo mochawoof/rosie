@@ -2,6 +2,7 @@ import javax.swing.*;
 import javax.script.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.Scanner;
 
 class Window extends JFrame {
     public JTextArea textArea;
@@ -20,6 +21,12 @@ class Window extends JFrame {
 
         setLaf("System");
 
+        try {
+            setIconImage(new ImageIcon(getClass().getResource("icon64.png").toURI().toURL()).getImage());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         textArea = new JTextArea("Rosie v1.0\nType 'help' to see all functions.\n> ");
 
         try {
@@ -28,7 +35,8 @@ class Window extends JFrame {
             context = engine.getContext();
 
             // Make Math functions global
-            engine.eval("var help = 'help cls '; var mProps = Object.getOwnPropertyNames(Math);for (var i = 0; i < mProps.length; i++) {this[mProps[i]] = Math[mProps[i]]; help += mProps[i] + ' ';}", context);
+
+            engine.eval("var help = 'help cls '; var mProps = Object.getOwnPropertyNames(Math);for (var i = 0; i < mProps.length; i++) {this[mProps[i]] = Math[mProps[i]]; help += mProps[i] + ' ';};", context);
         } catch (Exception e) {
             e.printStackTrace();
 
@@ -47,7 +55,7 @@ class Window extends JFrame {
 
                 if (code == KeyEvent.VK_ENTER) {
                     if (rawLine.startsWith(">")) {
-                        if (line.startsWith("cls")) {
+                        if (line.equals("cls")) {
                             lines = new String[0];
                         } else {
                             try {
