@@ -60,10 +60,12 @@ class Window extends JFrame {
                                     lines[lines.length - 1] = line + " = Syntax Error";
                                 }
 
-                                try {
-                                    globals.load("ans = '" + evalled + "'").call();
-                                } catch (Exception ex) {
-                                    ex.printStackTrace();
+                                if (evalled != null) {
+                                    try {
+                                        globals.load("ans = '" + evalled + "'").call();
+                                    } catch (Exception ex) {
+                                        ex.printStackTrace();
+                                    }
                                 }
                             }
                         }
