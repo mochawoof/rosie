@@ -26,7 +26,7 @@ class Window extends JFrame {
             e.printStackTrace();
         }
 
-        textArea = new JTextArea("Rosie v1.1\nType 'help' to see all functions.\n> ");
+        textArea = new JTextArea("Rosie v1.2\nType 'help' to see all functions.\n> ");
 
         globals = JsePlatform.standardGlobals();
         try {
@@ -49,20 +49,22 @@ class Window extends JFrame {
                         if (line.equals("cls")) {
                             lines = new String[0];
                         } else {
-                            Object evalled = null;
-                            try {
-                                evalled = globals.load("return " + line).call();
-                                if (evalled != null) {
-                                    lines[lines.length - 1] = line + " = " + evalled;
+                            if (!line.trim().isEmpty()) {
+                                Object evalled = null;
+                                try {
+                                    evalled = globals.load("return " + line).call();
+                                    if (evalled != null) {
+                                        lines[lines.length - 1] = line + " = " + evalled;
+                                    }
+                                } catch (Exception ex) {
+                                    lines[lines.length - 1] = line + " = Syntax Error";
                                 }
-                            } catch (Exception ex) {
-                                lines[lines.length - 1] = line + " = Syntax Error";
-                            }
 
-                            try {
-                                globals.load("ans = '" + evalled + "'").call();
-                            } catch (Exception ex) {
-                                ex.printStackTrace();
+                                try {
+                                    globals.load("ans = '" + evalled + "'").call();
+                                } catch (Exception ex) {
+                                    ex.printStackTrace();
+                                }
                             }
                         }
                         selectedLine = lines.length;
