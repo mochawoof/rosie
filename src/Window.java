@@ -1,16 +1,15 @@
 import javax.swing.*;
-import javax.script.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.Scanner;
+import org.luaj.vm2.*;
+import org.luaj.vm2.lib.jse.*;
 
 class Window extends JFrame {
     public JTextArea textArea;
     public JScrollPane textAreaScrollPane;
 
-    public ScriptEngineManager manager;
-    public ScriptEngine engine;
-    public ScriptContext context;
+    public Globals globals;
 
     public int selectedLine = 2;
 
@@ -27,21 +26,13 @@ class Window extends JFrame {
             e.printStackTrace();
         }
 
-        textArea = new JTextArea("Rosie v1.0\nType 'help' to see all functions.\n> ");
+        textArea = new JTextArea("Rosie v1.1\nType 'help' to see all functions.\n> ");
 
+        globals = JsePlatform.standardGlobals();
         try {
-            manager = new ScriptEngineManager();
-            engine = manager.getEngineByExtension("js");
-            context = engine.getContext();
-
-            // Make Math functions global
-
-            engine.eval("var help = 'help cls '; var mProps = Object.getOwnPropertyNames(Math);for (var i = 0; i < mProps.length; i++) {this[mProps[i]] = Math[mProps[i]]; help += mProps[i] + ' ';};", context);
+            globals.load(new Scanner(getClass().getResourceAsStream("init.lua")).useDelimiter("\\A").next()).call();
         } catch (Exception e) {
             e.printStackTrace();
-
-            textArea.setText("Nashorn is not supported on your device.\nGet help at https://github.com/mochawoof/rosie.");
-            textArea.setEnabled(false);
         }
 
         textArea.setCaretPosition(textArea.getText().length());
@@ -58,13 +49,20 @@ class Window extends JFrame {
                         if (line.equals("cls")) {
                             lines = new String[0];
                         } else {
+                            Object evalled = null;
                             try {
-                                Object evalled = engine.eval(line, context);
+                                evalled = globals.load("return " + line).call();
                                 if (evalled != null) {
-                                    lines[lines.length - 1] = evalled + "";
+                                    lines[lines.length - 1] = line + " = " + evalled;
                                 }
                             } catch (Exception ex) {
-                                lines[lines.length - 1] = "Syntax Error";
+                                lines[lines.length - 1] = line + " = Syntax Error";
+                            }
+
+                            try {
+                                globals.load("ans = '" + evalled + "'").call();
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
                             }
                         }
                         selectedLine = lines.length;
@@ -90,6 +88,9 @@ class Window extends JFrame {
                     }
 
                     String rawLastLine = lines[selectedLine];
+                    if (rawLastLine.lastIndexOf("=") != -1) {
+                        rawLastLine = rawLastLine.substring(0, rawLastLine.lastIndexOf("=")).trim();
+                    }
 
                     lines[lines.length - 1] = rawLastLine;
                     if (!rawLastLine.startsWith(">") || !rawLastLine.startsWith("> ")) {
