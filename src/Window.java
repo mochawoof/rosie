@@ -6,19 +6,17 @@ import org.luaj.vm2.*;
 import org.luaj.vm2.lib.jse.*;
 
 class Window extends JFrame {
-    public JTextArea textArea;
-    public JScrollPane textAreaScrollPane;
+    public JTextArea consoleArea;
+    public JScrollPane consoleAreaScrollPane;
 
     public Globals globals;
 
-    public int selectedLine = 2;
-
     public Window() {
         setTitle("Rosie");
-        setSize(500, 400);
+        setSize(600, 400);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
 
-        setLaf("System");
+        setLaf("Metal");
 
         try {
             setIconImage(new ImageIcon(getClass().getResource("icon64.png").toURI().toURL()).getImage());
@@ -26,7 +24,10 @@ class Window extends JFrame {
             e.printStackTrace();
         }
 
-        textArea = new JTextArea("Rosie v1.2\nType 'help' to see all functions.\n> ");
+        consoleArea = new JTextArea("");
+        consoleAreaScrollPane = new JScrollPane(consoleArea);
+        consoleAreaScrollPane.getVerticalScrollBar().setUnitIncrement(20);
+        add(consoleAreaScrollPane, BorderLayout.CENTER);
 
         globals = JsePlatform.standardGlobals();
         try {
@@ -34,94 +35,6 @@ class Window extends JFrame {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
-        textArea.setCaretPosition(textArea.getText().length());
-        textArea.addKeyListener(new KeyListener() {
-            public void keyReleased(KeyEvent e) {
-                String[] lines = textArea.getText().split("\n");
-                String rawLine = lines[lines.length - 1];
-                String line = rawLine.replace("> ", "").replace(">", "");
-                
-                int code = e.getKeyCode();
-
-                if (code == KeyEvent.VK_ENTER) {
-                    if (rawLine.startsWith(">")) {
-                        if (line.equals("cls")) {
-                            lines = new String[0];
-                        } else {
-                            if (!line.trim().isEmpty()) {
-                                Object evalled = null;
-                                try {
-                                    evalled = globals.load("return " + line).call();
-                                    if (evalled != null) {
-                                        lines[lines.length - 1] = line + " = " + evalled;
-                                    }
-                                } catch (Exception ex) {
-                                    lines[lines.length - 1] = line + " = Syntax Error";
-                                }
-
-                                if (evalled != null) {
-                                    try {
-                                        globals.load("ans = '" + evalled + "'").call();
-                                    } catch (Exception ex) {
-                                        ex.printStackTrace();
-                                    }
-                                }
-                            }
-                        }
-                        selectedLine = lines.length;
-                    }
-
-                    textArea.setText("");
-                    for (String l : lines) {
-                        textArea.append(l + "\n");
-                    }
-                    textArea.append("> ");
-                } else if (code == KeyEvent.VK_UP || code == KeyEvent.VK_DOWN) {
-                    boolean good = false;
-                    if (code == KeyEvent.VK_UP) {
-                        if (selectedLine - 1 >= 0) {
-                            good = true;
-                            selectedLine--;
-                        }
-                    } else if (code == KeyEvent.VK_DOWN) {
-                        if (selectedLine + 1 < lines.length - 1) {
-                            good = true;
-                            selectedLine++;
-                        }
-                    }
-
-                    String rawLastLine = lines[selectedLine];
-                    if (rawLastLine.lastIndexOf("=") != -1) {
-                        rawLastLine = rawLastLine.substring(0, rawLastLine.lastIndexOf("=")).trim();
-                    }
-
-                    lines[lines.length - 1] = rawLastLine;
-                    if (!rawLastLine.startsWith(">") || !rawLastLine.startsWith("> ")) {
-                        lines[lines.length - 1] = "> " + rawLastLine;
-                    }
-
-                    textArea.setText("");
-                    for (int i = 0; i < lines.length; i++) {
-                        String l = lines[i];
-                        textArea.append(l + ((i == lines.length - 1) ? "" : "\n"));
-                    }
-                }
-            }
-
-            public void keyPressed(KeyEvent e) {
-                int code = e.getKeyCode();
-                if (code == KeyEvent.VK_ENTER || code == KeyEvent.VK_UP || code == KeyEvent.VK_DOWN) {
-                    e.consume();
-                }
-            }
-
-            public void keyTyped(KeyEvent e) {}
-        });
-
-        textAreaScrollPane = new JScrollPane(textArea);
-        textAreaScrollPane.getVerticalScrollBar().setUnitIncrement(20);
-        add(textAreaScrollPane, BorderLayout.CENTER);
 
         setVisible(true);
     }
